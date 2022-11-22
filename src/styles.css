@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*body #root{*/
+/*    font-family: 'Helvetica Neue' !important;*/
+/*}*/
+
+.ui.progress:last-child {
+    margin-bottom: 0 !important;
+}
