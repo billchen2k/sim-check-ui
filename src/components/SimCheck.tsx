@@ -61,7 +61,10 @@ const SimCheck = (props: ISimCheckProps) => {
   };
 
   const renderCode = (code: string) => {
-    const elements = code.replace(/\ /g, '<span class="text-gray-300">·</span>')
+    const elements = code
+        .replace(/</g, '&lt;')
+        .replace(/>g/, '&gt;')
+        .replace(/\ /g, '<span class="text-gray-300">·</span>')
         .replace(/\n/g, '<span class="text-gray-300">↲</span>\n')
         .split('\n')
         .map((line, idx) => {
