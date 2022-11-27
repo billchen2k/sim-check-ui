@@ -66,6 +66,42 @@ export class SimManager {
   }
 
   public exportResults() {
-
+    let outputStr = 'submitter,plagiarism_count,suspicious_count\n';
+    const results: Record<string, Partial<Record<SimilarityLevel, number>>> = {};
+    this.simResults.forEach((one) => {
+      if (['suspicious', 'plagiarism'].includes(one.conclusion?.level || 'unknown')) {
+        const level = one.conclusion?.level || 'unknown';
+        if (!results[one.source_submitter]) {
+          results[one.source_submitter] = {
+            plagiarism: 0,
+            suspicious: 0,
+          };
+        }
+        if (!results[one.target_submitter]) {
+          results[one.target_submitter] = {
+            plagiarism: 0,
+            suspicious: 0,
+          };
+        }
+        results[one.source_submitter][level] = (results[one.source_submitter][level] || 0) + 1;
+        results[one.target_submitter][level] = (results[one.target_submitter][level] || 0) + 1;
+      }
+    });
+    Object.keys(results).forEach((submitter) => {
+      outputStr += `${submitter},${results[submitter].plagiarism},${results[submitter].suspicious}\n`;
+    });
+    // Export csv file
+    const fileName = 'similarity_results.csv';
+    const blob = new Blob([outputStr], {type: 'text/csv;charset=utf-8;'});
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', fileName);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }
 }

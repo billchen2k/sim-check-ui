@@ -12,7 +12,7 @@ import {
   Progress,
   SemanticCOLORS,
   Label,
-  ButtonGroup, TextArea,
+  ButtonGroup, TextArea, Checkbox,
 } from 'semantic-ui-react';
 import * as _ from 'lodash';
 import {ChangeEvent} from 'react';
@@ -35,7 +35,9 @@ const sortingCriteriaOptions = [
 
 const SimCheck = (props: ISimCheckProps) => {
   const [sortBy, setSortBy] = React.useState<SortingCriteria>('similarity');
+  const [groupedNames, setGroupedNames] = React.useState<boolean>(false);
   const [sortOrder, setSortOrder] = React.useState<string>('desc');
+  const [minSim, setMinSim] = React.useState<number>(0);
   const [searchText, setSearchText] = React.useState<string>('');
   const [displaySearchText, setDisplaySearchText] = React.useState<string>('');
   const [activeHash, setActiveHash] = React.useState<number>(-1);
@@ -69,7 +71,7 @@ const SimCheck = (props: ISimCheckProps) => {
         .split('\n')
         .map((line, idx) => {
           return <div className={'flex flex-row items-center'}>
-            <div className={'text-gray-400 text-sm mr-6'} >{idx}</div>
+            <div className={'text-gray-400 text-sm w-6 mr-6 text-right'} >{idx}</div>
             <div key={idx} style={{fontFamily: 'monospace'}} className={'flex flex-wrapflex-1'} dangerouslySetInnerHTML={{__html: line}}></div>
           </div>;
         });
@@ -124,6 +126,9 @@ const SimCheck = (props: ISimCheckProps) => {
         const filterStr = item.source + item.target + item.conclusion?.level + item.conclusion?.comments + item.total_nodes + ' ' + item.plagiarism_nodes;
         return filterStr.toLowerCase().includes(searchText.toLowerCase());
       })
+      .filter((item) => {
+        return item.similarity >= minSim / 100;
+      })
       .sort((a, b) => {
         let cmp = 0;
         if (sortBy == 'conclusion') {
@@ -147,6 +152,14 @@ const SimCheck = (props: ISimCheckProps) => {
           const key = sortingCriteriaOptions.find((one) => one.value == sortBy)?.key;
           // @ts-ignore
           cmp = a[key] - b[key];
+        }
+        if (groupedNames) {
+          const submitStr = (source: string, target: string) => {
+            return [source, target].sort().join(' ');
+          };
+          const submitStrA = submitStr(a.source_submitter, a.target_submitter);
+          const submitStrB = submitStr(b.source_submitter, b.target_submitter);
+          cmp = submitStrA.localeCompare(submitStrB) || cmp;
         }
         return sortOrder == 'desc' ? -cmp : cmp;
       });
@@ -188,9 +201,12 @@ const SimCheck = (props: ISimCheckProps) => {
                     }}/>
                 </Form.Field>);
             })}
+            <Checkbox checked={groupedNames} className={'mr-4'} label={'Group by name pairs'}
+              onChange={(e) => setGroupedNames(!groupedNames)}/>
             <Button size={'small'} basic circular={true} icon={sortOrder === 'desc' ? 'sort amount down': 'sort amount up'} onClick={() => {
               setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
             }}/>
+
           </Form.Group>
         </Form>
       </div>
@@ -199,6 +215,17 @@ const SimCheck = (props: ISimCheckProps) => {
         <Button labelPosition={'left'} icon color={'blue'} onClick={() => handleExport()}><Icon name={'download'}/>Export</Button>
         <div className={'flex-1'} />
         <Pager />
+        <Input placeholder={'Similarity Greater than...'} labelPosition={'right'} value={displaySearchText}>
+          <Label>Min. Similarity</Label>
+          <input className={'w-16'} placeholder={'...'} value={minSim} onChange={(e) => {
+            if (e.target.value == '' || !(parseFloat(e.target.value) >= 0 && parseFloat(e.target.value) <= 100)) {
+              setMinSim(0);
+            } else {
+              setMinSim(parseInt(e.target.value));
+            }
+          }} />
+          <Label>%</Label>
+        </Input>
         <Input icon={'search'} placeholder={'Search...'} value={displaySearchText}
           onChange={handleUpdateSearchText}/>
       </div>
